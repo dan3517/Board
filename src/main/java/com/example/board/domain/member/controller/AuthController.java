@@ -1,6 +1,8 @@
 package com.example.board.domain.member.controller;
 
+import com.example.board.domain.member.dto.request.LoginRequest;
 import com.example.board.domain.member.dto.request.SignupRequest;
+import com.example.board.domain.member.dto.response.LoginResponse;
 import com.example.board.domain.member.dto.response.SignupResponse;
 import com.example.board.domain.member.service.AuthService;
 import com.example.board.global.common.response.ApiResponse;
@@ -21,7 +23,8 @@ public class AuthController {
     public ResponseEntity<ApiResponse<SignupResponse>> signup(
             @Valid @RequestBody SignupRequest request
     ) {
-        SignupResponse response = authService.signup(request);
+        SignupResponse response =
+                authService.signup(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -32,5 +35,21 @@ public class AuthController {
                                 response
                         )
                 );
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response =
+                authService.login(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "AUTH200",
+                        "로그인에 성공했습니다.",
+                        response
+                )
+        );
     }
 }

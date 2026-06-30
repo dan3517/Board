@@ -1,11 +1,15 @@
 package com.example.board.domain.member.service;
 
+import com.example.board.domain.member.dto.request.LoginRequest;
 import com.example.board.domain.member.dto.request.SignupRequest;
+import com.example.board.domain.member.dto.response.LoginResponse;
 import com.example.board.domain.member.dto.response.SignupResponse;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.repository.MemberRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
+import com.example.board.global.security.CustomUserDetails;
+import com.example.board.global.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,8 +17,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,11 +40,19 @@ class AuthServiceTest {
 
     private AuthService authService;
 
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
                 memberRepository,
-                passwordEncoder
+                passwordEncoder,
+                authenticationManager,
+                jwtTokenProvider
         );
     }
 
@@ -188,6 +205,128 @@ class AuthServiceTest {
                 .save(any(Member.class));
 
         then(passwordEncoder)
+                .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("로그인에 성공하면 Access Token을 발급한다")
+    void loginSuccess() {
+        // given
+        LoginRequest request = new LoginRequest(
+                "USER@EXAMPLE.COM ",
+                "Password123!"
+        );
+
+        Member member = Member.create(
+                "user@example.com",
+                "encoded-password",
+                "backend"
+        );
+
+        ReflectionTestUtils.setField(
+                member,
+                "id",
+                1L
+        );
+
+        CustomUserDetails principal =
+                CustomUserDetails.from(member);
+
+        Authentication authentication =
+                UsernamePasswordAuthenticationToken
+                        .authenticated(
+                                principal,
+                                null,
+                                principal.getAuthorities()
+                        );
+
+        given(
+                authenticationManager.authenticate(
+                        any(Authentication.class)
+                )
+        ).willReturn(authentication);
+
+        Instant expiresAt =
+                Instant.parse(
+                        "2026-06-30T10:30:00Z"
+                );
+
+        given(
+                jwtTokenProvider.issueAccessToken(1L)
+        ).willReturn(
+                new JwtTokenProvider.IssuedToken(
+                        "access-token",
+                        expiresAt
+                )
+        );
+
+        // when
+        LoginResponse response =
+                authService.login(request);
+
+        // then
+        assertThat(response.accessToken())
+                .isEqualTo("access-token");
+
+        assertThat(response.tokenType())
+                .isEqualTo("Bearer");
+
+        assertThat(response.expiresAt())
+                .isEqualTo(expiresAt);
+
+        then(authenticationManager)
+                .should()
+                .authenticate(
+                        argThat(auth ->
+                                authentication
+                                        .getName()
+                                        .equals(
+                                                "user@example.com"
+                                        )
+                        )
+                );
+    }
+
+    @Test
+    @DisplayName("로그인 정보가 일치하지 않으면 실패한다")
+    void loginFailsWhenCredentialsInvalid() {
+        // given
+        LoginRequest request = new LoginRequest(
+                "user@example.com",
+                "WrongPassword!"
+        );
+
+        given(
+                authenticationManager.authenticate(
+                        any(Authentication.class)
+                )
+        ).willThrow(
+                new org.springframework.security.authentication
+                        .BadCredentialsException(
+                        "Bad credentials"
+                )
+        );
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> authService.login(request)
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(
+                        BusinessException.class
+                );
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.INVALID_LOGIN
+                );
+
+        then(jwtTokenProvider)
                 .shouldHaveNoInteractions();
     }
 }
