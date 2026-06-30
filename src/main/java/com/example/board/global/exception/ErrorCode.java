@@ -60,6 +60,12 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "MEMBER4092",
             "이미 사용 중인 닉네임입니다."
+    ),
+
+    DUPLICATE_MEMBER_DATA(
+            HttpStatus.CONFLICT,
+            "이미 사용 중인 회원 정보입니다.",
+            "MEMBER409"
     );
 
     private final HttpStatus httpStatus;

@@ -2,6 +2,7 @@ package com.example.board.global.exception;
 
 import com.example.board.global.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -70,4 +71,23 @@ public class GlobalExceptionHandler {
                 .status(errorCode.getHttpStatus())
                 .body(ApiResponse.failure(errorCode));
     }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>>
+    handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception
+    ) {
+        log.warn(
+                "Database integrity constraint violation",
+                exception
+        );
+
+        ErrorCode errorCode =
+                ErrorCode.DUPLICATE_MEMBER_DATA;
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.failure(errorCode));
+    }
+
 }
