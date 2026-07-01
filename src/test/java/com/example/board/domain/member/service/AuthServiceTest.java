@@ -5,11 +5,14 @@ import com.example.board.domain.member.dto.request.SignupRequest;
 import com.example.board.domain.member.dto.response.TokenResponse;
 import com.example.board.domain.member.dto.response.SignupResponse;
 import com.example.board.domain.member.entity.Member;
+import com.example.board.domain.member.entity.RefreshToken;
 import com.example.board.domain.member.repository.MemberRepository;
+import com.example.board.domain.member.repository.RefreshTokenRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
 import com.example.board.global.security.CustomUserDetails;
 import com.example.board.global.security.JwtTokenProvider;
+import com.example.board.global.security.RefreshTokenHasher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +39,10 @@ class AuthServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private RefreshTokenRepository refreshTokenRepository;
 
-    private AuthService authService;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -46,13 +50,20 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private RefreshTokenHasher refreshTokenHasher;
+
+    private AuthService authService;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
                 memberRepository,
+                refreshTokenRepository,
                 passwordEncoder,
                 authenticationManager,
-                jwtTokenProvider
+                jwtTokenProvider,
+                refreshTokenHasher
         );
     }
 
@@ -209,7 +220,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그인에 성공하면 Access Token을 발급한다")
+    @DisplayName("로그인에 성공하면 Access Token과 Refresh Token을 발급한다")
     void loginSuccess() {
         // given
         LoginRequest request = new LoginRequest(
@@ -233,12 +244,11 @@ class AuthServiceTest {
                 CustomUserDetails.from(member);
 
         Authentication authentication =
-                UsernamePasswordAuthenticationToken
-                        .authenticated(
-                                principal,
-                                null,
-                                principal.getAuthorities()
-                        );
+                UsernamePasswordAuthenticationToken.authenticated(
+                        principal,
+                        null,
+                        principal.getAuthorities()
+                );
 
         given(
                 authenticationManager.authenticate(
@@ -246,19 +256,44 @@ class AuthServiceTest {
                 )
         ).willReturn(authentication);
 
-        Instant expiresAt =
-                Instant.parse(
-                        "2026-06-30T10:30:00Z"
+        Instant accessExpiresAt =
+                Instant.parse("2026-06-30T10:30:00Z");
+
+        Instant refreshExpiresAt =
+                Instant.parse("2026-07-30T10:00:00Z");
+
+        JwtTokenProvider.IssuedToken accessToken =
+                new JwtTokenProvider.IssuedToken(
+                        "access-token",
+                        accessExpiresAt
+                );
+
+        JwtTokenProvider.IssuedToken refreshToken =
+                new JwtTokenProvider.IssuedToken(
+                        "refresh-token",
+                        refreshExpiresAt
                 );
 
         given(
-                jwtTokenProvider.issueAccessToken(1L)
+                jwtTokenProvider.issueTokenPair(1L)
         ).willReturn(
-                new JwtTokenProvider.IssuedToken(
-                        "access-token",
-                        expiresAt
+                new JwtTokenProvider.TokenPair(
+                        accessToken,
+                        refreshToken
                 )
         );
+
+        given(
+                refreshTokenHasher.hash("refresh-token")
+        ).willReturn("hashed-refresh-token");
+
+        given(
+                refreshTokenRepository.findByMemberId(1L)
+        ).willReturn(java.util.Optional.empty());
+
+        given(
+                memberRepository.getReferenceById(1L)
+        ).willReturn(member);
 
         // when
         TokenResponse response =
@@ -268,23 +303,33 @@ class AuthServiceTest {
         assertThat(response.accessToken())
                 .isEqualTo("access-token");
 
+        assertThat(response.refreshToken())
+                .isEqualTo("refresh-token");
+
         assertThat(response.tokenType())
                 .isEqualTo("Bearer");
-
-        assertThat(response.expiresAt())
-                .isEqualTo(expiresAt);
 
         then(authenticationManager)
                 .should()
                 .authenticate(
                         argThat(auth ->
-                                authentication
-                                        .getName()
-                                        .equals(
-                                                "user@example.com"
+                                "user@example.com".equals(
+                                        auth.getName()
+                                )
+                                        &&
+                                        "Password123!".equals(
+                                                auth.getCredentials()
                                         )
                         )
                 );
+
+        then(jwtTokenProvider)
+                .should()
+                .issueTokenPair(1L);
+
+        then(refreshTokenRepository)
+                .should()
+                .save(any(RefreshToken.class));
     }
 
     @Test

@@ -97,6 +97,24 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "이미 사용 중인 회원 정보입니다.",
             "MEMBER409"
+    ),
+
+    CATEGORY_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "CATEGORY404",
+            "사용할 수 있는 카테고리를 찾을 수 없습니다."
+    ),
+
+    POST_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "POST404",
+            "게시글을 찾을 수 없습니다."
+    ),
+
+    POST_ACCESS_DENIED(
+            HttpStatus.FORBIDDEN,
+            "POST403",
+            "게시글을 변경할 권한이 없습니다."
     );
 
     private final HttpStatus httpStatus;
