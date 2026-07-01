@@ -4,6 +4,7 @@ import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CategoryRepository
@@ -14,5 +15,16 @@ public interface CategoryRepository
             CategoryStatus status
     );
 
-    boolean existsByName(String name);
+    List<Category> findAllByStatusOrderByIdAsc(
+            CategoryStatus status
+    );
+
+    boolean existsByNameIgnoreCase(
+            String name
+    );
+
+    boolean existsByNameIgnoreCaseAndIdNot(
+            String name,
+            Long id
+    );
 }

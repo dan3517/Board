@@ -218,7 +218,7 @@ public class PostService {
                 )
                 .orElseThrow(
                         () -> new BusinessException(
-                                ErrorCode.CATEGORY_NOT_FOUND
+                                ErrorCode.CATEGORY_NOT_AVAILABLE
                         )
                 );
     }

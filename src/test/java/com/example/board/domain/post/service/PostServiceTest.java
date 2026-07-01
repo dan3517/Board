@@ -269,7 +269,7 @@ class PostServiceTest {
 
         assertThat(exception.getErrorCode())
                 .isEqualTo(
-                        ErrorCode.CATEGORY_NOT_FOUND
+                        ErrorCode.CATEGORY_NOT_AVAILABLE
                 );
 
         then(postRepository)
