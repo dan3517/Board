@@ -1,8 +1,10 @@
 package com.example.board.domain.post.controller;
 
 import com.example.board.domain.post.dto.request.PostCreateRequest;
+import com.example.board.domain.post.dto.request.PostUpdateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
 import com.example.board.domain.post.dto.response.PostDetailResponse;
+import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.service.PostService;
 import com.example.board.global.common.response.ApiResponse;
 import com.example.board.global.security.CustomUserDetails;
@@ -60,6 +62,60 @@ public class PostController {
                         "POST200",
                         "게시글을 조회했습니다.",
                         response
+                )
+        );
+    }
+
+    @PatchMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostUpdateResponse>>
+    updatePost(
+            @AuthenticationPrincipal
+            CustomUserDetails userDetails,
+
+            @PathVariable
+            Long postId,
+
+            @Valid
+            @RequestBody
+            PostUpdateRequest request
+    ) {
+        PostUpdateResponse response =
+                postService.updatePost(
+                        userDetails.getMemberId(),
+                        userDetails.getRole(),
+                        postId,
+                        request
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "POST2001",
+                        "게시글을 수정했습니다.",
+                        response
+                )
+        );
+    }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>>
+    deletePost(
+            @AuthenticationPrincipal
+            CustomUserDetails userDetails,
+
+            @PathVariable
+            Long postId
+    ) {
+        postService.deletePost(
+                userDetails.getMemberId(),
+                userDetails.getRole(),
+                postId
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>success(
+                        "POST2002",
+                        "게시글을 삭제했습니다.",
+                        null
                 )
         );
     }

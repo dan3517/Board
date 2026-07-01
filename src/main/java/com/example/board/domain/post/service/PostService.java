@@ -4,12 +4,15 @@ import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
 import com.example.board.domain.member.entity.Member;
+import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
 import com.example.board.domain.member.repository.MemberRepository;
 import com.example.board.domain.post.dto.query.PostDetailQueryDto;
 import com.example.board.domain.post.dto.request.PostCreateRequest;
+import com.example.board.domain.post.dto.request.PostUpdateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
 import com.example.board.domain.post.dto.response.PostDetailResponse;
+import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
 import com.example.board.domain.post.repository.PostRepository;
@@ -45,7 +48,8 @@ public class PostService {
                 request.content()
         );
 
-        Post savedPost = postRepository.save(post);
+        Post savedPost =
+                postRepository.save(post);
 
         return PostCreateResponse.from(savedPost);
     }
@@ -76,6 +80,80 @@ public class PostService {
                         );
 
         return PostDetailResponse.from(post);
+    }
+
+    public PostUpdateResponse updatePost(
+            Long memberId,
+            MemberRole memberRole,
+            Long postId,
+            PostUpdateRequest request
+    ) {
+        Post post = findPublishedPost(postId);
+
+        validateModificationAuthority(
+                post,
+                memberId,
+                memberRole
+        );
+
+        Category category = findActiveCategory(
+                request.categoryId()
+        );
+
+        post.update(
+                category,
+                normalizeTitle(request.title()),
+                request.content()
+        );
+
+        return PostUpdateResponse.from(post);
+    }
+
+    public void deletePost(
+            Long memberId,
+            MemberRole memberRole,
+            Long postId
+    ) {
+        Post post = findPublishedPost(postId);
+
+        validateModificationAuthority(
+                post,
+                memberId,
+                memberRole
+        );
+
+        post.delete();
+    }
+
+    private Post findPublishedPost(Long postId) {
+        return postRepository
+                .findByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+                .orElseThrow(
+                        () -> new BusinessException(
+                                ErrorCode.POST_NOT_FOUND
+                        )
+                );
+    }
+
+    private void validateModificationAuthority(
+            Post post,
+            Long memberId,
+            MemberRole memberRole
+    ) {
+        boolean isAdmin =
+                memberRole == MemberRole.ADMIN;
+
+        boolean isAuthor =
+                post.isAuthor(memberId);
+
+        if (!isAdmin && !isAuthor) {
+            throw new BusinessException(
+                    ErrorCode.POST_ACCESS_DENIED
+            );
+        }
     }
 
     private Member findActiveMember(Long memberId) {
