@@ -75,7 +75,7 @@ public class JwtAuthenticationFilter
             String token
     ) {
         Long memberId =
-                jwtTokenProvider.extractMemberId(token);
+                jwtTokenProvider.extractAccessTokenMemberId(token);
 
         CustomUserDetails userDetails =
                 userDetailsService.loadUserByMemberId(

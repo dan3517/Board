@@ -2,7 +2,7 @@ package com.example.board.domain.member.service;
 
 import com.example.board.domain.member.dto.request.LoginRequest;
 import com.example.board.domain.member.dto.request.SignupRequest;
-import com.example.board.domain.member.dto.response.LoginResponse;
+import com.example.board.domain.member.dto.response.TokenResponse;
 import com.example.board.domain.member.dto.response.SignupResponse;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.repository.MemberRepository;
@@ -261,7 +261,7 @@ class AuthServiceTest {
         );
 
         // when
-        LoginResponse response =
+        TokenResponse response =
                 authService.login(request);
 
         // then

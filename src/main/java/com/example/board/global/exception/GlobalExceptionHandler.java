@@ -1,6 +1,7 @@
 package com.example.board.global.exception;
 
 import com.example.board.global.common.response.ApiResponse;
+import com.example.board.global.security.JwtAuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
@@ -84,6 +85,19 @@ public class GlobalExceptionHandler {
 
         ErrorCode errorCode =
                 ErrorCode.DUPLICATE_MEMBER_DATA;
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.failure(errorCode));
+    }
+
+    @ExceptionHandler(JwtAuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>>
+    handleJwtAuthenticationException(
+            JwtAuthenticationException exception
+    ) {
+        ErrorCode errorCode =
+                exception.getErrorCode();
 
         return ResponseEntity
                 .status(errorCode.getHttpStatus())

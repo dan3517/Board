@@ -62,6 +62,19 @@ public enum ErrorCode {
             "만료된 토큰입니다."
     ),
 
+
+    INVALID_REFRESH_TOKEN(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH4014",
+            "유효하지 않은 리프레시 토큰입니다."
+    ),
+
+    EXPIRED_REFRESH_TOKEN(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH4015",
+            "만료된 리프레시 토큰입니다."
+    ),
+
     MEMBER_NOT_FOUND(
             HttpStatus.NOT_FOUND,
             "MEMBER404",

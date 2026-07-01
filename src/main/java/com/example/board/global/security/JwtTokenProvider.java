@@ -14,21 +14,34 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
 
-    private static final String TOKEN_TYPE_CLAIM = "type";
-    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String TOKEN_TYPE_CLAIM =
+            "type";
+
+    private static final String ACCESS_TOKEN_TYPE =
+            "access";
+
+    private static final String REFRESH_TOKEN_TYPE =
+            "refresh";
 
     private final SecretKey secretKey;
     private final JwtParser jwtParser;
     private final long accessTokenExpirationMs;
+    private final long refreshTokenExpirationMs;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.secret}")
+            String secret,
+
             @Value("${jwt.access-token-expiration-ms}")
-            long accessTokenExpirationMs
+            long accessTokenExpirationMs,
+
+            @Value("${jwt.refresh-token-expiration-ms}")
+            long refreshTokenExpirationMs
     ) {
         byte[] keyBytes =
                 Decoders.BASE64.decode(secret);
@@ -42,20 +55,81 @@ public class JwtTokenProvider {
 
         this.accessTokenExpirationMs =
                 accessTokenExpirationMs;
+
+        this.refreshTokenExpirationMs =
+                refreshTokenExpirationMs;
     }
 
-    public IssuedToken issueAccessToken(Long memberId) {
+    public TokenPair issueTokenPair(Long memberId) {
         Instant issuedAt = Instant.now();
 
-        Instant expiresAt = issuedAt.plusMillis(
+        IssuedToken accessToken = issueToken(
+                memberId,
+                ACCESS_TOKEN_TYPE,
+                issuedAt,
                 accessTokenExpirationMs
         );
 
+        IssuedToken refreshToken = issueToken(
+                memberId,
+                REFRESH_TOKEN_TYPE,
+                issuedAt,
+                refreshTokenExpirationMs
+        );
+
+        return new TokenPair(
+                accessToken,
+                refreshToken
+        );
+    }
+
+    public Long extractAccessTokenMemberId(
+            String token
+    ) {
+        Claims claims = parseClaims(
+                token,
+                ACCESS_TOKEN_TYPE,
+                ErrorCode.EXPIRED_TOKEN,
+                ErrorCode.INVALID_TOKEN
+        );
+
+        return parseMemberId(
+                claims,
+                ErrorCode.INVALID_TOKEN
+        );
+    }
+
+    public Long extractRefreshTokenMemberId(
+            String token
+    ) {
+        Claims claims = parseClaims(
+                token,
+                REFRESH_TOKEN_TYPE,
+                ErrorCode.EXPIRED_REFRESH_TOKEN,
+                ErrorCode.INVALID_REFRESH_TOKEN
+        );
+
+        return parseMemberId(
+                claims,
+                ErrorCode.INVALID_REFRESH_TOKEN
+        );
+    }
+
+    private IssuedToken issueToken(
+            Long memberId,
+            String tokenType,
+            Instant issuedAt,
+            long expirationMs
+    ) {
+        Instant expiresAt =
+                issuedAt.plusMillis(expirationMs);
+
         String token = Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(memberId.toString())
                 .claim(
                         TOKEN_TYPE_CLAIM,
-                        ACCESS_TOKEN_TYPE
+                        tokenType
                 )
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))
@@ -68,46 +142,78 @@ public class JwtTokenProvider {
         );
     }
 
-    public Long extractMemberId(String token) {
+    private Claims parseClaims(
+            String token,
+            String expectedTokenType,
+            ErrorCode expiredErrorCode,
+            ErrorCode invalidErrorCode
+    ) {
         try {
             Claims claims = jwtParser
                     .parseSignedClaims(token)
                     .getPayload();
 
-            validateAccessTokenType(claims);
-
-            return Long.valueOf(
-                    claims.getSubject()
+            validateTokenType(
+                    claims,
+                    expectedTokenType,
+                    invalidErrorCode
             );
+
+            return claims;
 
         } catch (ExpiredJwtException exception) {
             throw new JwtAuthenticationException(
-                    ErrorCode.EXPIRED_TOKEN,
+                    expiredErrorCode,
                     exception
             );
+
+        } catch (JwtAuthenticationException exception) {
+            throw exception;
 
         } catch (
                 JwtException |
                 IllegalArgumentException exception
         ) {
             throw new JwtAuthenticationException(
-                    ErrorCode.INVALID_TOKEN,
+                    invalidErrorCode,
                     exception
             );
         }
     }
 
-    private void validateAccessTokenType(
-            Claims claims
+    private void validateTokenType(
+            Claims claims,
+            String expectedTokenType,
+            ErrorCode errorCode
     ) {
         String tokenType = claims.get(
                 TOKEN_TYPE_CLAIM,
                 String.class
         );
 
-        if (!ACCESS_TOKEN_TYPE.equals(tokenType)) {
+        if (!expectedTokenType.equals(tokenType)) {
             throw new JwtAuthenticationException(
-                    ErrorCode.INVALID_TOKEN
+                    errorCode
+            );
+        }
+    }
+
+    private Long parseMemberId(
+            Claims claims,
+            ErrorCode errorCode
+    ) {
+        try {
+            return Long.valueOf(
+                    claims.getSubject()
+            );
+
+        } catch (
+                NumberFormatException |
+                NullPointerException exception
+        ) {
+            throw new JwtAuthenticationException(
+                    errorCode,
+                    exception
             );
         }
     }
@@ -115,6 +221,12 @@ public class JwtTokenProvider {
     public record IssuedToken(
             String value,
             Instant expiresAt
+    ) {
+    }
+
+    public record TokenPair(
+            IssuedToken accessToken,
+            IssuedToken refreshToken
     ) {
     }
 }
