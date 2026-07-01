@@ -21,6 +21,7 @@ import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
 import com.example.board.domain.post.repository.PostRepository;
+import com.example.board.domain.postlike.repository.PostLikeRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class PostService {
     private final CategoryRepository categoryRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
 
     public PostCreateResponse createPost(
             Long memberId,
@@ -63,7 +65,10 @@ public class PostService {
         return PostCreateResponse.from(savedPost);
     }
 
-    public PostDetailResponse getPost(Long postId) {
+    public PostDetailResponse getPost(
+            Long postId,
+            Long currentMemberId
+    ) {
         int updatedRowCount =
                 postRepository.increaseViewCount(
                         postId,
@@ -89,14 +94,30 @@ public class PostService {
                         );
 
         long commentCount =
-                commentRepository.countByPostIdAndStatus(
-                        postId,
-                        CommentStatus.PUBLISHED
+                commentRepository
+                        .countByPostIdAndStatus(
+                                postId,
+                                CommentStatus.PUBLISHED
+                        );
+
+        long likeCount =
+                postLikeRepository.countByPostId(
+                        postId
                 );
+
+        boolean likedByMe =
+                currentMemberId != null
+                        && postLikeRepository
+                        .existsByPostIdAndMemberId(
+                                postId,
+                                currentMemberId
+                        );
 
         return PostDetailResponse.from(
                 post,
-                commentCount
+                commentCount,
+                likeCount,
+                likedByMe
         );
     }
 

@@ -38,6 +38,12 @@ public enum ErrorCode {
             "지원하지 않는 HTTP 메서드입니다."
     ),
 
+    DATA_INTEGRITY_VIOLATION(
+            HttpStatus.CONFLICT,
+            "COMMON409",
+            "데이터 제약조건을 위반했습니다."
+    ),
+
     INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "COMMON500",

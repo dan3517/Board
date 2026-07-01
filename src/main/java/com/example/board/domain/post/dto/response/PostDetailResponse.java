@@ -10,6 +10,8 @@ public record PostDetailResponse(
         String content,
         long viewCount,
         long commentCount,
+        long likeCount,
+        boolean likedByMe,
         AuthorResponse author,
         CategoryResponse category,
         LocalDateTime createdAt,
@@ -18,7 +20,9 @@ public record PostDetailResponse(
 
     public static PostDetailResponse from(
             PostDetailQueryDto dto,
-            long commentCount
+            long commentCount,
+            long likeCount,
+            boolean likedByMe
     ) {
         return new PostDetailResponse(
                 dto.postId(),
@@ -26,6 +30,8 @@ public record PostDetailResponse(
                 dto.content(),
                 dto.viewCount(),
                 commentCount,
+                likeCount,
+                likedByMe,
                 new AuthorResponse(
                         dto.authorId(),
                         dto.authorNickname()

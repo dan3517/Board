@@ -84,7 +84,7 @@ public class GlobalExceptionHandler {
         );
 
         ErrorCode errorCode =
-                ErrorCode.DUPLICATE_MEMBER_DATA;
+                ErrorCode.DATA_INTEGRITY_VIOLATION;
 
         return ResponseEntity
                 .status(errorCode.getHttpStatus())

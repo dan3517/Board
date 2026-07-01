@@ -3,7 +3,9 @@ package com.example.board.domain.post.repository;
 import com.example.board.domain.post.dto.query.PostDetailQueryDto;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -59,6 +61,18 @@ public interface PostRepository
               and post.status = :status
             """)
     Optional<PostDetailQueryDto> findDetailByIdAndStatus(
+            @Param("postId") Long postId,
+            @Param("status") PostStatus status
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select post
+        from Post post
+        where post.id = :postId
+          and post.status = :status
+        """)
+    Optional<Post> findByIdAndStatusForUpdate(
             @Param("postId") Long postId,
             @Param("status") PostStatus status
     );

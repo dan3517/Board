@@ -10,6 +10,7 @@ public record PostListQueryDto(
         Long categoryId,
         String categoryName,
         long viewCount,
+        long likeCount,
         LocalDateTime createdAt
 ) {
 }

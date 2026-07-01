@@ -10,6 +10,7 @@ public record PostListItemResponse(
         AuthorResponse author,
         CategoryResponse category,
         long viewCount,
+        long likeCount,
         LocalDateTime createdAt
 ) {
 
@@ -28,6 +29,7 @@ public record PostListItemResponse(
                         dto.categoryName()
                 ),
                 dto.viewCount(),
+                dto.likeCount(),
                 dto.createdAt()
         );
     }

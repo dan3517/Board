@@ -17,6 +17,7 @@ import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
 import com.example.board.domain.post.repository.PostRepository;
+import com.example.board.domain.postlike.repository.PostLikeRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,9 @@ class PostServiceTest {
     @Mock
     private CommentRepository commentRepository;
 
+    @Mock
+    private PostLikeRepository postLikeRepository;
+
     private PostService postService;
 
     @BeforeEach
@@ -58,7 +62,8 @@ class PostServiceTest {
                 memberRepository,
                 categoryRepository,
                 postRepository,
-                commentRepository
+                commentRepository,
+                postLikeRepository
         );
     }
 
@@ -325,7 +330,7 @@ class PostServiceTest {
 
         // when
         PostDetailResponse response =
-                postService.getPost(postId);
+                postService.getPost(postId, null);
 
         // then
         assertThat(response.postId())
@@ -384,7 +389,7 @@ class PostServiceTest {
 
         // when
         Throwable throwable = catchThrowable(
-                () -> postService.getPost(postId)
+                () -> postService.getPost(postId, null)
         );
 
         // then
@@ -427,7 +432,7 @@ class PostServiceTest {
 
         // when
         Throwable throwable = catchThrowable(
-                () -> postService.getPost(postId)
+                () -> postService.getPost(postId, null)
         );
 
         // then

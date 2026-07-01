@@ -9,7 +9,8 @@ import java.util.Locale;
 public enum PostSortType {
 
     LATEST,
-    VIEWS;
+    VIEWS,
+    LIKES;
 
     public static PostSortType from(String value) {
         if (!StringUtils.hasText(value)) {

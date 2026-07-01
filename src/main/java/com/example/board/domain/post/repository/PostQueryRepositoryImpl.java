@@ -20,6 +20,7 @@ import java.util.List;
 import static com.example.board.domain.category.entity.QCategory.category;
 import static com.example.board.domain.member.entity.QMember.member;
 import static com.example.board.domain.post.entity.QPost.post;
+import static com.example.board.domain.postlike.entity.QPostLike.postLike;
 
 @Repository
 @RequiredArgsConstructor
@@ -45,12 +46,15 @@ public class PostQueryRepositoryImpl
                                         category.id,
                                         category.name,
                                         post.viewCount,
+                                        postLike.id.count(),
                                         post.createdAt
                                 )
                         )
                         .from(post)
                         .join(post.author, member)
                         .join(post.category, category)
+                        .leftJoin(postLike)
+                        .on(postLike.post.eq(post))
                         .where(
                                 post.status.eq(
                                         PostStatus.PUBLISHED
@@ -64,6 +68,16 @@ public class PostQueryRepositoryImpl
                                 categoryIdEquals(
                                         condition.categoryId()
                                 )
+                        )
+                        .groupBy(
+                                post.id,
+                                post.title,
+                                member.id,
+                                member.nickname,
+                                category.id,
+                                category.name,
+                                post.viewCount,
+                                post.createdAt
                         )
                         .orderBy(
                                 orderSpecifiers(
@@ -107,9 +121,7 @@ public class PostQueryRepositoryImpl
                 )
                 .fetchOne();
 
-        return count == null
-                ? 0L
-                : count;
+        return count == null ? 0L : count;
     }
 
     private BooleanExpression keywordContains(
@@ -152,6 +164,11 @@ public class PostQueryRepositoryImpl
             PostSortType sortType
     ) {
         return switch (sortType) {
+            case LIKES -> new OrderSpecifier<?>[]{
+                    postLike.id.count().desc(),
+                    post.id.desc()
+            };
+
             case VIEWS -> new OrderSpecifier<?>[]{
                     post.viewCount.desc(),
                     post.id.desc()
