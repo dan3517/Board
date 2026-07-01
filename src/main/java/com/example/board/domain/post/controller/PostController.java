@@ -1,9 +1,11 @@
 package com.example.board.domain.post.controller;
 
 import com.example.board.domain.post.dto.request.PostCreateRequest;
+import com.example.board.domain.post.dto.request.PostSearchRequest;
 import com.example.board.domain.post.dto.request.PostUpdateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
 import com.example.board.domain.post.dto.response.PostDetailResponse;
+import com.example.board.domain.post.dto.response.PostListResponse;
 import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.service.PostService;
 import com.example.board.global.common.response.ApiResponse;
@@ -116,6 +118,25 @@ public class PostController {
                         "POST2002",
                         "게시글을 삭제했습니다.",
                         null
+                )
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PostListResponse>>
+    getPosts(
+            @Valid
+            @ModelAttribute
+            PostSearchRequest request
+    ) {
+        PostListResponse response =
+                postService.getPosts(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "POST2003",
+                        "게시글 목록을 조회했습니다.",
+                        response
                 )
         );
     }

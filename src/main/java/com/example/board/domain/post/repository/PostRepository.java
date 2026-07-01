@@ -11,7 +11,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface PostRepository
-        extends JpaRepository<Post, Long> {
+        extends JpaRepository<Post, Long>,
+        PostQueryRepository {
 
     Optional<Post> findByIdAndStatus(
             Long id,

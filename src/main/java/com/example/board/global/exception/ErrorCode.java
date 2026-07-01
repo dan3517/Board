@@ -105,6 +105,12 @@ public enum ErrorCode {
             "사용할 수 있는 카테고리를 찾을 수 없습니다."
     ),
 
+    INVALID_POST_SORT(
+            HttpStatus.BAD_REQUEST,
+            "POST4001",
+            "지원하지 않는 게시글 정렬 방식입니다."
+    ),
+
     POST_NOT_FOUND(
             HttpStatus.NOT_FOUND,
             "POST404",

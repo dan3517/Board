@@ -8,10 +8,13 @@ import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
 import com.example.board.domain.member.repository.MemberRepository;
 import com.example.board.domain.post.dto.query.PostDetailQueryDto;
+import com.example.board.domain.post.dto.query.PostListQueryDto;
 import com.example.board.domain.post.dto.request.PostCreateRequest;
+import com.example.board.domain.post.dto.request.PostSearchRequest;
 import com.example.board.domain.post.dto.request.PostUpdateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
 import com.example.board.domain.post.dto.response.PostDetailResponse;
+import com.example.board.domain.post.dto.response.PostListResponse;
 import com.example.board.domain.post.dto.response.PostUpdateResponse;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
@@ -19,6 +22,9 @@ import com.example.board.domain.post.repository.PostRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -186,5 +192,23 @@ public class PostService {
 
     private String normalizeTitle(String title) {
         return title.strip();
+    }
+
+    @Transactional(readOnly = true)
+    public PostListResponse getPosts(
+            PostSearchRequest request
+    ) {
+        Pageable pageable = PageRequest.of(
+                request.resolvedPage(),
+                request.resolvedSize()
+        );
+
+        Page<PostListQueryDto> result =
+                postRepository.searchPosts(
+                        request.toCondition(),
+                        pageable
+                );
+
+        return PostListResponse.from(result);
     }
 }
