@@ -6,8 +6,10 @@ import com.example.board.domain.category.repository.CategoryRepository;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberStatus;
 import com.example.board.domain.member.repository.MemberRepository;
+import com.example.board.domain.post.dto.query.PostDetailQueryDto;
 import com.example.board.domain.post.dto.request.PostCreateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
+import com.example.board.domain.post.dto.response.PostDetailResponse;
 import com.example.board.domain.post.entity.Post;
 import com.example.board.domain.post.entity.PostStatus;
 import com.example.board.domain.post.repository.PostRepository;
@@ -22,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -258,5 +261,175 @@ class PostServiceTest {
 
         then(postRepository)
                 .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("게시글 상세 조회 시 조회 수를 증가시키고 게시글 정보를 반환한다")
+    void getPostSuccess() {
+        // given
+        Long postId = 1L;
+
+        LocalDateTime createdAt =
+                LocalDateTime.of(
+                        2026,
+                        7,
+                        1,
+                        10,
+                        0
+                );
+
+        LocalDateTime updatedAt =
+                LocalDateTime.of(
+                        2026,
+                        7,
+                        1,
+                        10,
+                        30
+                );
+
+        PostDetailQueryDto queryDto =
+                new PostDetailQueryDto(
+                        postId,
+                        "JPA 공부 기록",
+                        "영속성 컨텍스트를 공부했습니다.",
+                        11L,
+                        createdAt,
+                        updatedAt,
+                        10L,
+                        "backend",
+                        20L,
+                        "공부 기록"
+                );
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(1);
+
+        given(
+                postRepository.findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(queryDto));
+
+        // when
+        PostDetailResponse response =
+                postService.getPost(postId);
+
+        // then
+        assertThat(response.postId())
+                .isEqualTo(postId);
+
+        assertThat(response.title())
+                .isEqualTo("JPA 공부 기록");
+
+        assertThat(response.content())
+                .isEqualTo(
+                        "영속성 컨텍스트를 공부했습니다."
+                );
+
+        assertThat(response.viewCount())
+                .isEqualTo(11L);
+
+        assertThat(response.author().memberId())
+                .isEqualTo(10L);
+
+        assertThat(response.author().nickname())
+                .isEqualTo("backend");
+
+        assertThat(response.category().categoryId())
+                .isEqualTo(20L);
+
+        assertThat(response.category().name())
+                .isEqualTo("공부 기록");
+
+        then(postRepository)
+                .should()
+                .increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                );
+
+        then(postRepository)
+                .should()
+                .findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                );
+    }
+
+    @Test
+    @DisplayName("게시글이 존재하지 않으면 상세 조회에 실패한다")
+    void getPostFailsWhenPostNotFound() {
+        // given
+        Long postId = 999L;
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(0);
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.getPost(postId)
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.POST_NOT_FOUND);
+
+        then(postRepository)
+                .should(never())
+                .findDetailByIdAndStatus(
+                        anyLong(),
+                        any(PostStatus.class)
+                );
+    }
+
+    @Test
+    @DisplayName("조회 수 증가 후 상세 정보를 찾을 수 없으면 실패한다")
+    void getPostFailsWhenDetailNotFound() {
+        // given
+        Long postId = 1L;
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(1);
+
+        given(
+                postRepository.findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.empty());
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.getPost(postId)
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.POST_NOT_FOUND);
     }
 }

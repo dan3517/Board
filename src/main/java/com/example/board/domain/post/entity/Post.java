@@ -112,10 +112,6 @@ public class Post extends BaseEntity {
         this.status = PostStatus.DELETED;
     }
 
-    public void increaseViewCount() {
-        this.viewCount++;
-    }
-
     public boolean isAuthor(Long memberId) {
         return author.getId().equals(memberId);
     }

@@ -6,9 +6,12 @@ import com.example.board.domain.category.repository.CategoryRepository;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberStatus;
 import com.example.board.domain.member.repository.MemberRepository;
+import com.example.board.domain.post.dto.query.PostDetailQueryDto;
 import com.example.board.domain.post.dto.request.PostCreateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
+import com.example.board.domain.post.dto.response.PostDetailResponse;
 import com.example.board.domain.post.entity.Post;
+import com.example.board.domain.post.entity.PostStatus;
 import com.example.board.domain.post.repository.PostRepository;
 import com.example.board.global.exception.BusinessException;
 import com.example.board.global.exception.ErrorCode;
@@ -45,6 +48,34 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
         return PostCreateResponse.from(savedPost);
+    }
+
+    public PostDetailResponse getPost(Long postId) {
+        int updatedRowCount =
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                );
+
+        if (updatedRowCount == 0) {
+            throw new BusinessException(
+                    ErrorCode.POST_NOT_FOUND
+            );
+        }
+
+        PostDetailQueryDto post =
+                postRepository
+                        .findDetailByIdAndStatus(
+                                postId,
+                                PostStatus.PUBLISHED
+                        )
+                        .orElseThrow(
+                                () -> new BusinessException(
+                                        ErrorCode.POST_NOT_FOUND
+                                )
+                        );
+
+        return PostDetailResponse.from(post);
     }
 
     private Member findActiveMember(Long memberId) {

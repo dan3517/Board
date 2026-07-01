@@ -2,6 +2,7 @@ package com.example.board.domain.post.controller;
 
 import com.example.board.domain.post.dto.request.PostCreateRequest;
 import com.example.board.domain.post.dto.response.PostCreateResponse;
+import com.example.board.domain.post.dto.response.PostDetailResponse;
 import com.example.board.domain.post.service.PostService;
 import com.example.board.global.common.response.ApiResponse;
 import com.example.board.global.security.CustomUserDetails;
@@ -44,5 +45,22 @@ public class PostController {
                                 response
                         )
                 );
+    }
+
+    @GetMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostDetailResponse>>
+    getPost(
+            @PathVariable Long postId
+    ) {
+        PostDetailResponse response =
+                postService.getPost(postId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "POST200",
+                        "게시글을 조회했습니다.",
+                        response
+                )
+        );
     }
 }
