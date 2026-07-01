@@ -3,6 +3,7 @@ package com.example.board.domain.post.service;
 import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
+import com.example.board.domain.comment.repository.CommentRepository;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
@@ -46,6 +47,9 @@ class PostServiceTest {
     @Mock
     private PostRepository postRepository;
 
+    @Mock
+    private CommentRepository commentRepository;
+
     private PostService postService;
 
     @BeforeEach
@@ -53,7 +57,8 @@ class PostServiceTest {
         postService = new PostService(
                 memberRepository,
                 categoryRepository,
-                postRepository
+                postRepository,
+                commentRepository
         );
     }
 

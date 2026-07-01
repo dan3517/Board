@@ -3,6 +3,8 @@ package com.example.board.domain.post.service;
 import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
+import com.example.board.domain.comment.entity.CommentStatus;
+import com.example.board.domain.comment.repository.CommentRepository;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
@@ -36,6 +38,7 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     public PostCreateResponse createPost(
             Long memberId,
@@ -85,7 +88,16 @@ public class PostService {
                                 )
                         );
 
-        return PostDetailResponse.from(post);
+        long commentCount =
+                commentRepository.countByPostIdAndStatus(
+                        postId,
+                        CommentStatus.PUBLISHED
+                );
+
+        return PostDetailResponse.from(
+                post,
+                commentCount
+        );
     }
 
     public PostUpdateResponse updatePost(

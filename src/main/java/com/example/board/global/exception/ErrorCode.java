@@ -121,6 +121,18 @@ public enum ErrorCode {
             HttpStatus.FORBIDDEN,
             "POST403",
             "게시글을 변경할 권한이 없습니다."
+    ),
+
+    COMMENT_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "COMMENT404",
+            "댓글을 찾을 수 없습니다."
+    ),
+
+    COMMENT_ACCESS_DENIED(
+            HttpStatus.FORBIDDEN,
+            "COMMENT403",
+            "댓글을 변경할 권한이 없습니다."
     );
 
     private final HttpStatus httpStatus;

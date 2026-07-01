@@ -19,6 +19,11 @@ public interface PostRepository
             PostStatus status
     );
 
+    boolean existsByIdAndStatus(
+            Long id,
+            PostStatus status
+    );
+
     @Modifying(
             flushAutomatically = true,
             clearAutomatically = true

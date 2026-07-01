@@ -9,6 +9,7 @@ public record PostDetailResponse(
         String title,
         String content,
         long viewCount,
+        long commentCount,
         AuthorResponse author,
         CategoryResponse category,
         LocalDateTime createdAt,
@@ -16,13 +17,15 @@ public record PostDetailResponse(
 ) {
 
     public static PostDetailResponse from(
-            PostDetailQueryDto dto
+            PostDetailQueryDto dto,
+            long commentCount
     ) {
         return new PostDetailResponse(
                 dto.postId(),
                 dto.title(),
                 dto.content(),
                 dto.viewCount(),
+                commentCount,
                 new AuthorResponse(
                         dto.authorId(),
                         dto.authorNickname()
