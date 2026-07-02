@@ -17,8 +17,8 @@ public final class SwaggerExamples {
               "code": "COMMON400",
               "message": "입력값이 올바르지 않습니다.",
               "result": {
-                "title": "게시글 제목은 필수입니다.",
-                "content": "게시글 내용은 필수입니다."
+                "email": "올바른 이메일 형식이어야 합니다.",
+                "password": "비밀번호는 필수입니다."
               }
             }
             """;
@@ -38,6 +38,105 @@ public final class SwaggerExamples {
               "code": "COMMON403",
               "message": "요청을 수행할 권한이 없습니다.",
               "result": null
+            }
+            """;
+
+    public static final String MEMBER_NOT_FOUND = """
+            {
+              "success": false,
+              "code": "MEMBER404",
+              "message": "회원을 찾을 수 없습니다.",
+              "result": null
+            }
+            """;
+
+    public static final String DUPLICATE_EMAIL = """
+            {
+              "success": false,
+              "code": "MEMBER4091",
+              "message": "이미 사용 중인 이메일입니다.",
+              "result": null
+            }
+            """;
+
+    public static final String DUPLICATE_NICKNAME = """
+            {
+              "success": false,
+              "code": "MEMBER4092",
+              "message": "이미 사용 중인 닉네임입니다.",
+              "result": null
+            }
+            """;
+
+    public static final String INVALID_LOGIN = """
+            {
+              "success": false,
+              "code": "AUTH401",
+              "message": "이메일 또는 비밀번호가 올바르지 않습니다.",
+              "result": null
+            }
+            """;
+
+    public static final String INVALID_REFRESH_TOKEN = """
+            {
+              "success": false,
+              "code": "AUTH4013",
+              "message": "유효하지 않은 Refresh Token입니다.",
+              "result": null
+            }
+            """;
+
+    public static final String SIGNUP_SUCCESS = """
+            {
+              "success": true,
+              "code": "MEMBER201",
+              "message": "회원가입에 성공했습니다.",
+              "result": {
+                "memberId": 1,
+                "email": "user@example.com",
+                "nickname": "backend"
+              }
+            }
+            """;
+
+    public static final String LOGIN_SUCCESS = """
+            {
+              "success": true,
+              "code": "AUTH200",
+              "message": "로그인에 성공했습니다.",
+              "result": {
+                "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+                "tokenType": "Bearer"
+              }
+            }
+            """;
+
+    public static final String REISSUE_SUCCESS = """
+            {
+              "success": true,
+              "code": "AUTH2001",
+              "message": "토큰을 재발급했습니다.",
+              "result": {
+                "accessToken": "new-access-token",
+                "refreshToken": "new-refresh-token",
+                "tokenType": "Bearer"
+              }
+            }
+            """;
+
+    public static final String MEMBER_PROFILE_SUCCESS = """
+            {
+              "success": true,
+              "code": "MEMBER200",
+              "message": "내 정보를 조회했습니다.",
+              "result": {
+                "memberId": 1,
+                "email": "user@example.com",
+                "nickname": "backend",
+                "role": "USER",
+                "status": "ACTIVE"
+              }
             }
             """;
 

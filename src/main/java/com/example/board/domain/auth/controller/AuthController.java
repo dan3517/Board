@@ -1,5 +1,6 @@
-package com.example.board.domain.member.controller;
+package com.example.board.domain.auth.controller;
 
+import com.example.board.domain.auth.controller.docs.AuthApiDocs;
 import com.example.board.domain.member.dto.request.LoginRequest;
 import com.example.board.domain.member.dto.request.ReissueRequest;
 import com.example.board.domain.member.dto.request.SignupRequest;
@@ -13,15 +14,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class AuthController implements AuthApiDocs {
 
     private final AuthService authService;
 
+    @Override
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupResponse>>
     signup(
@@ -43,6 +48,7 @@ public class AuthController {
                 );
     }
 
+    @Override
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>>
     login(
@@ -62,6 +68,7 @@ public class AuthController {
         );
     }
 
+    @Override
     @PostMapping("/reissue")
     public ResponseEntity<ApiResponse<TokenResponse>>
     reissue(
@@ -81,6 +88,7 @@ public class AuthController {
         );
     }
 
+    @Override
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>>
     logout(
@@ -92,7 +100,7 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.success(
+                ApiResponse.<Void>success(
                         "AUTH2002",
                         "로그아웃했습니다.",
                         null
