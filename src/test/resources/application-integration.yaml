@@ -1,0 +1,46 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+    open-in-view: false
+
+    properties:
+      hibernate:
+        format_sql: true
+
+  sql:
+    init:
+      mode: never
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
+
+app:
+  file:
+    storage: local
+
+    local:
+      # 테스트 클래스의 DynamicPropertySource에서 설정
+      root-path: ./build/integration-test-uploads
+
+      # RANDOM_PORT 서버에서 상대 URL로 접근
+      public-base-url: /files
+
+  image:
+    max-count: 5
+    max-size-bytes: 10485760
+
+    cleanup:
+      batch-size: 100
+
+      # 테스트 중 스케줄러가 갑자기 실행되지 않도록 1시간으로 설정
+      initial-delay-ms: 3600000
+      retry-delay-ms: 3600000

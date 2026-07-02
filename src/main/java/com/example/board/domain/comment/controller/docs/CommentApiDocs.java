@@ -19,6 +19,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
@@ -104,6 +107,7 @@ public interface CommentApiDocs {
             )
             Long postId,
 
+            @Valid
             CommentCreateRequest request
     );
 
@@ -155,11 +159,23 @@ public interface CommentApiDocs {
                     description = "페이지 번호, 0부터 시작",
                     example = "0"
             )
+            @Min(
+                    value = 0,
+                    message = "페이지 번호는 0 이상이어야 합니다."
+            )
             int page,
 
             @Parameter(
                     description = "페이지 크기, 최대 100",
                     example = "20"
+            )
+            @Min(
+                    value = 1,
+                    message = "페이지 크기는 1 이상이어야 합니다."
+            )
+            @Max(
+                    value = 100,
+                    message = "페이지 크기는 100 이하여야 합니다."
             )
             int size
     );
@@ -226,6 +242,7 @@ public interface CommentApiDocs {
             )
             Long commentId,
 
+            @Valid
             CommentUpdateRequest request
     );
 
