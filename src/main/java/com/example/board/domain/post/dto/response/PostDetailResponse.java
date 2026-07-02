@@ -1,8 +1,10 @@
 package com.example.board.domain.post.dto.response;
 
+import com.example.board.domain.image.dto.response.PostImageResponse;
 import com.example.board.domain.post.dto.query.PostDetailQueryDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record PostDetailResponse(
         Long postId,
@@ -12,6 +14,7 @@ public record PostDetailResponse(
         long commentCount,
         long likeCount,
         boolean likedByMe,
+        List<PostImageResponse> images,
         AuthorResponse author,
         CategoryResponse category,
         LocalDateTime createdAt,
@@ -22,7 +25,8 @@ public record PostDetailResponse(
             PostDetailQueryDto dto,
             long commentCount,
             long likeCount,
-            boolean likedByMe
+            boolean likedByMe,
+            List<PostImageResponse> images
     ) {
         return new PostDetailResponse(
                 dto.postId(),
@@ -32,6 +36,7 @@ public record PostDetailResponse(
                 commentCount,
                 likeCount,
                 likedByMe,
+                images,
                 new AuthorResponse(
                         dto.authorId(),
                         dto.authorNickname()

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -181,6 +182,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
                 .body(ApiResponse.failure(errorCode));
+    }
+
+    @ExceptionHandler(
+            MaxUploadSizeExceededException.class
+    )
+    public ResponseEntity<ApiResponse<Void>>
+    handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException exception
+    ) {
+        ErrorCode errorCode =
+                ErrorCode.IMAGE_TOO_LARGE;
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(
+                        ApiResponse.failure(errorCode)
+                );
     }
 
 }

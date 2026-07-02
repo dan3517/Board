@@ -31,6 +31,7 @@ public class SecurityConfig {
             "/api/v1/health",
             "/swagger-ui/**",
             "/v3/api-docs/**",
+            "/files/**",
             "/error"
     };
 

@@ -151,6 +151,48 @@ public enum ErrorCode {
             HttpStatus.FORBIDDEN,
             "COMMENT403",
             "댓글을 변경할 권한이 없습니다."
+    ),
+
+    IMAGE_FILE_REQUIRED(
+            HttpStatus.BAD_REQUEST,
+            "IMAGE4001",
+            "업로드할 이미지 파일이 필요합니다."
+    ),
+
+    IMAGE_TOO_LARGE(
+            HttpStatus.PAYLOAD_TOO_LARGE,
+            "IMAGE413",
+            "이미지 파일 크기가 허용 범위를 초과했습니다."
+    ),
+
+    IMAGE_UNSUPPORTED_TYPE(
+            HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+            "IMAGE415",
+            "지원하지 않는 이미지 형식입니다."
+    ),
+
+    IMAGE_INVALID_FILE(
+            HttpStatus.BAD_REQUEST,
+            "IMAGE4002",
+            "유효하지 않은 이미지 파일입니다."
+    ),
+
+    IMAGE_COUNT_EXCEEDED(
+            HttpStatus.BAD_REQUEST,
+            "IMAGE4003",
+            "게시글에 첨부할 수 있는 이미지 개수를 초과했습니다."
+    ),
+
+    IMAGE_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "IMAGE404",
+            "이미지를 찾을 수 없습니다."
+    ),
+
+    IMAGE_STORAGE_ERROR(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "IMAGE500",
+            "이미지 저장 중 오류가 발생했습니다."
     );
 
     private final HttpStatus httpStatus;

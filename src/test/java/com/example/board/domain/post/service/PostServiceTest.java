@@ -4,6 +4,7 @@ import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
 import com.example.board.domain.comment.repository.CommentRepository;
+import com.example.board.domain.image.service.PostImageService;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
@@ -30,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -54,6 +56,9 @@ class PostServiceTest {
     @Mock
     private PostLikeRepository postLikeRepository;
 
+    @Mock
+    private PostImageService postImageService;
+
     private PostService postService;
 
     @BeforeEach
@@ -63,7 +68,8 @@ class PostServiceTest {
                 categoryRepository,
                 postRepository,
                 commentRepository,
-                postLikeRepository
+                postLikeRepository,
+                postImageService
         );
     }
 
@@ -314,6 +320,14 @@ class PostServiceTest {
                         "공부 기록"
                 );
 
+        PostDetailResponse.from(
+                queryDto,
+                3L,
+                5L,
+                false,
+                List.of()
+        );
+
         given(
                 postRepository.increaseViewCount(
                         postId,
@@ -327,6 +341,10 @@ class PostServiceTest {
                         PostStatus.PUBLISHED
                 )
         ).willReturn(Optional.of(queryDto));
+
+        given(
+                postImageService.getImagesForPost(postId)
+        ).willReturn(List.of());
 
         // when
         PostDetailResponse response =

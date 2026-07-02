@@ -5,6 +5,8 @@ import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
 import com.example.board.domain.comment.entity.CommentStatus;
 import com.example.board.domain.comment.repository.CommentRepository;
+import com.example.board.domain.image.dto.response.PostImageResponse;
+import com.example.board.domain.image.service.PostImageService;
 import com.example.board.domain.member.entity.Member;
 import com.example.board.domain.member.entity.MemberRole;
 import com.example.board.domain.member.entity.MemberStatus;
@@ -31,6 +33,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -41,6 +45,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostImageService postImageService;
 
     public PostCreateResponse createPost(
             Long memberId,
@@ -101,9 +106,8 @@ public class PostService {
                         );
 
         long likeCount =
-                postLikeRepository.countByPostId(
-                        postId
-                );
+                postLikeRepository
+                        .countByPostId(postId);
 
         boolean likedByMe =
                 currentMemberId != null
@@ -113,11 +117,16 @@ public class PostService {
                                 currentMemberId
                         );
 
+        List<PostImageResponse> images =
+                postImageService
+                        .getImagesForPost(postId);
+
         return PostDetailResponse.from(
                 post,
                 commentCount,
                 likeCount,
-                likedByMe
+                likedByMe,
+                images
         );
     }
 
