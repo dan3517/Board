@@ -19,6 +19,7 @@ repositories {
 }
 
 def querydslVersion = '7.4.0'
+def awsSdkVersion = '2.46.19'
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -54,6 +55,13 @@ dependencies {
     annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:${querydslVersion}:jpa"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+
+    implementation platform(
+            "software.amazon.awssdk:bom:${awsSdkVersion}"
+    )
+
+    implementation 'software.amazon.awssdk:s3'
+
 }
 
 tasks.named('test') {

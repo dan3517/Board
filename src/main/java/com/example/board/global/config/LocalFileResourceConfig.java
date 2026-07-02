@@ -3,6 +3,7 @@ package com.example.board.global.config;
 import com.example.board.global.config.properties.LocalFileProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -11,6 +12,9 @@ import java.nio.file.Path;
 
 @Configuration(proxyBeanMethods = false)
 @RequiredArgsConstructor
+@EnableConfigurationProperties(
+        LocalFileProperties.class
+)
 @ConditionalOnProperty(
         prefix = "app.file",
         name = "storage",

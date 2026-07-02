@@ -5,7 +5,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/board?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:d030517!}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -32,18 +32,23 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:HhEzSBZk3P3MY3bWse4yI3vXFte5UAJVCJtUKx3Wsrc=}
+  secret: ${JWT_SECRET}
   access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:1800000}
   refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
 
 app:
+  image:
+    max-count: 5
+    max-size-bytes: 10485760
+
   file:
-    storage: local
+    storage: ${FILE_STORAGE:local}
 
     local:
       root-path: ${LOCAL_FILE_ROOT:./uploads}
       public-base-url: ${LOCAL_FILE_BASE_URL:http://localhost:8080/files}
 
-  image:
-    max-count: 5
-    max-size-bytes: 10485760
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      presigned-url-duration-minutes: ${AWS_S3_URL_DURATION_MINUTES:10}
