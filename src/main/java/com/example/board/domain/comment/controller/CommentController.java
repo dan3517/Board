@@ -1,5 +1,6 @@
 package com.example.board.domain.comment.controller;
 
+import com.example.board.domain.comment.controller.docs.CommentApiDocs;
 import com.example.board.domain.comment.dto.request.CommentCreateRequest;
 import com.example.board.domain.comment.dto.request.CommentUpdateRequest;
 import com.example.board.domain.comment.dto.response.CommentCreateResponse;
@@ -21,10 +22,11 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequiredArgsConstructor
-public class CommentController {
+public class CommentController implements CommentApiDocs {
 
     private final CommentService commentService;
 
+    @Override
     @PostMapping("/api/v1/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<CommentCreateResponse>>
     createComment(
@@ -56,6 +58,7 @@ public class CommentController {
                 );
     }
 
+    @Override
     @GetMapping("/api/v1/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<CommentListResponse>>
     getComments(
@@ -96,6 +99,7 @@ public class CommentController {
         );
     }
 
+    @Override
     @PatchMapping("/api/v1/comments/{commentId}")
     public ResponseEntity<ApiResponse<CommentUpdateResponse>>
     updateComment(
@@ -126,6 +130,7 @@ public class CommentController {
         );
     }
 
+    @Override
     @DeleteMapping("/api/v1/comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>>
     deleteComment(

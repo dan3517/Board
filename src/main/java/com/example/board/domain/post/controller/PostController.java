@@ -20,10 +20,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/posts")
-public class PostController {
+public class PostController implements com.example.board.domain.post.controller.docs.PostApiDocs {
 
     private final PostService postService;
 
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<PostCreateResponse>>
     createPost(
@@ -51,6 +52,7 @@ public class PostController {
                 );
     }
 
+    @Override
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostDetailResponse>>
     getPost(
@@ -80,6 +82,7 @@ public class PostController {
         );
     }
 
+    @Override
     @PatchMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostUpdateResponse>>
     updatePost(
@@ -110,6 +113,7 @@ public class PostController {
         );
     }
 
+    @Override
     @DeleteMapping("/{postId}")
     public ResponseEntity<ApiResponse<Void>>
     deletePost(
@@ -134,6 +138,7 @@ public class PostController {
         );
     }
 
+    @Override
     @GetMapping
     public ResponseEntity<ApiResponse<PostListResponse>>
     getPosts(

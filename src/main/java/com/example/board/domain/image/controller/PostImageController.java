@@ -1,5 +1,6 @@
 package com.example.board.domain.image.controller;
 
+import com.example.board.domain.image.controller.docs.PostImageApiDocs;
 import com.example.board.domain.image.dto.response.PostImageUploadResponse;
 import com.example.board.domain.image.service.PostImageService;
 import com.example.board.global.common.response.ApiResponse;
@@ -21,13 +22,13 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(
-        "/api/v1/posts/{postId}/images"
-)
-public class PostImageController {
+@RequestMapping("/api/v1/posts/{postId}/images")
+public class PostImageController
+        implements PostImageApiDocs {
 
     private final PostImageService postImageService;
 
+    @Override
     @PostMapping(
             consumes =
                     MediaType.MULTIPART_FORM_DATA_VALUE
@@ -66,6 +67,7 @@ public class PostImageController {
                 );
     }
 
+    @Override
     @DeleteMapping("/{imageId}")
     public ResponseEntity<ApiResponse<Void>>
     deleteImage(

@@ -1,5 +1,6 @@
 package com.example.board.domain.category.controller;
 
+import com.example.board.domain.category.controller.docs.CategoryApiDocs;
 import com.example.board.domain.category.dto.response.CategoryListResponse;
 import com.example.board.domain.category.service.CategoryService;
 import com.example.board.global.common.response.ApiResponse;
@@ -12,10 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/categories")
-public class CategoryController {
+public class CategoryController implements CategoryApiDocs {
 
     private final CategoryService categoryService;
 
+    @Override
     @GetMapping
     public ResponseEntity<ApiResponse<CategoryListResponse>>
     getCategories() {

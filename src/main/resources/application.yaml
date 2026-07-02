@@ -57,3 +57,22 @@ app:
       bucket: ${AWS_S3_BUCKET:}
       region: ${AWS_REGION:ap-northeast-2}
       presigned-url-duration-minutes: ${AWS_S3_URL_DURATION_MINUTES:10}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    document-title: Board API
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    deep-linking: true
+    filter: true
+    try-it-out-enabled: true
+    persist-authorization: true
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1

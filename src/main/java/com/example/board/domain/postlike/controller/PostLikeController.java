@@ -1,5 +1,6 @@
 package com.example.board.domain.postlike.controller;
 
+import com.example.board.domain.postlike.controller.docs.PostLikeApiDocs;
 import com.example.board.domain.postlike.dto.response.PostLikeResponse;
 import com.example.board.domain.postlike.service.PostLikeService;
 import com.example.board.global.common.response.ApiResponse;
@@ -12,10 +13,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/posts/{postId}/likes")
-public class PostLikeController {
+public class PostLikeController implements PostLikeApiDocs {
 
     private final PostLikeService postLikeService;
 
+    @Override
     @PutMapping
     public ResponseEntity<ApiResponse<PostLikeResponse>>
     likePost(
@@ -40,6 +42,7 @@ public class PostLikeController {
         );
     }
 
+    @Override
     @DeleteMapping
     public ResponseEntity<ApiResponse<PostLikeResponse>>
     unlikePost(

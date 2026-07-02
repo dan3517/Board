@@ -1,5 +1,6 @@
 package com.example.board.domain.category.controller;
 
+import com.example.board.domain.category.controller.docs.AdminCategoryApiDocs;
 import com.example.board.domain.category.dto.request.CategoryCreateRequest;
 import com.example.board.domain.category.dto.request.CategoryStatusUpdateRequest;
 import com.example.board.domain.category.dto.request.CategoryUpdateRequest;
@@ -23,10 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/categories")
 @PreAuthorize("hasRole('ADMIN')")
-public class AdminCategoryController {
+public class AdminCategoryController implements AdminCategoryApiDocs {
 
     private final CategoryService categoryService;
 
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<CategoryCreateResponse>>
     createCategory(
@@ -48,6 +50,7 @@ public class AdminCategoryController {
                 );
     }
 
+    @Override
     @PatchMapping("/{categoryId}")
     public ResponseEntity<ApiResponse<CategoryResponse>>
     updateCategory(
@@ -73,6 +76,7 @@ public class AdminCategoryController {
         );
     }
 
+    @Override
     @PatchMapping("/{categoryId}/status")
     public ResponseEntity<ApiResponse<CategoryResponse>>
     updateCategoryStatus(
