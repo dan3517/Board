@@ -6,6 +6,7 @@ import com.example.board.domain.comment.entity.CommentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -52,5 +53,26 @@ public interface CommentRepository
             @Param("postId") Long postId,
             @Param("status") CommentStatus status,
             Pageable pageable
+    );
+
+    @Modifying(
+            flushAutomatically = true
+    )
+    @Query("""
+        update Comment comment
+        set comment.status = :deletedStatus,
+            comment.updatedAt = CURRENT_TIMESTAMP
+        where comment.post.id = :postId
+          and comment.status = :publishedStatus
+        """)
+    int softDeleteAllByPostId(
+            @Param("postId")
+            Long postId,
+
+            @Param("publishedStatus")
+            CommentStatus publishedStatus,
+
+            @Param("deletedStatus")
+            CommentStatus deletedStatus
     );
 }

@@ -1,6 +1,7 @@
 package com.example.board.domain.image.service;
 
 import com.example.board.domain.category.entity.Category;
+import com.example.board.domain.image.cleanup.service.ImageDeleteTaskCoordinator;
 import com.example.board.domain.image.dto.response.PostImageUploadResponse;
 import com.example.board.domain.image.entity.PostImage;
 import com.example.board.domain.image.repository.PostImageRepository;
@@ -53,6 +54,9 @@ class PostImageServiceTest {
     @Mock
     private ImageFileValidator imageFileValidator;
 
+    @Mock
+    private ImageDeleteTaskCoordinator imageDeleteTaskCoordinator;
+
     private PostImageService postImageService;
 
     @BeforeEach
@@ -66,7 +70,8 @@ class PostImageServiceTest {
                         new ImageProperties(
                                 5,
                                 10 * 1024 * 1024
-                        )
+                        ),
+                        imageDeleteTaskCoordinator
                 );
     }
 
@@ -365,6 +370,70 @@ class PostImageServiceTest {
 
         then(imageStorage)
                 .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("이미지 삭제 시 저장소 삭제 작업을 생성한다")
+    void deleteImageEnqueuesDeleteTask() {
+        // given
+        Long memberId = 1L;
+        Long postId = 10L;
+        Long imageId = 100L;
+
+        Post post =
+                createPost(
+                        memberId,
+                        postId
+                );
+
+        PostImage image =
+                PostImage.create(
+                        post,
+                        "image.png",
+                        "posts/10/test.png",
+                        "image/png",
+                        1000L,
+                        0
+                );
+
+        ReflectionTestUtils.setField(
+                image,
+                "id",
+                imageId
+        );
+
+        given(
+                postRepository
+                        .findByIdAndStatusForUpdate(
+                                postId,
+                                PostStatus.PUBLISHED
+                        )
+        ).willReturn(Optional.of(post));
+
+        given(
+                postImageRepository
+                        .findByIdAndPostId(
+                                imageId,
+                                postId
+                        )
+        ).willReturn(Optional.of(image));
+
+        // when
+        postImageService.deleteImage(
+                memberId,
+                MemberRole.USER,
+                postId,
+                imageId
+        );
+
+        // then
+        then(imageDeleteTaskCoordinator)
+                .should()
+                .enqueue(List.of(image));
+
+        then(imageStorage)
+                .should(never())
+                .delete(any(String.class));
     }
 
     private Post createPost(

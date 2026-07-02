@@ -162,13 +162,29 @@ public class PostService {
             MemberRole memberRole,
             Long postId
     ) {
-        Post post = findPublishedPost(postId);
+        Post post =
+                findPublishedPostForUpdate(postId);
 
         validateModificationAuthority(
                 post,
                 memberId,
                 memberRole
         );
+
+        commentRepository.softDeleteAllByPostId(
+                postId,
+                CommentStatus.PUBLISHED,
+                CommentStatus.DELETED
+        );
+
+        postLikeRepository.deleteAllByPostId(
+                postId
+        );
+
+        postImageService
+                .enqueueAllImagesForDeletion(
+                        postId
+                );
 
         post.delete();
     }
@@ -252,5 +268,20 @@ public class PostService {
                 );
 
         return PostListResponse.from(result);
+    }
+
+    private Post findPublishedPostForUpdate(
+            Long postId
+    ) {
+        return postRepository
+                .findByIdAndStatusForUpdate(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+                .orElseThrow(
+                        () -> new BusinessException(
+                                ErrorCode.POST_NOT_FOUND
+                        )
+                );
     }
 }

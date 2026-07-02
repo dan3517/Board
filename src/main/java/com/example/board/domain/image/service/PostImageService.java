@@ -1,5 +1,6 @@
 package com.example.board.domain.image.service;
 
+import com.example.board.domain.image.cleanup.service.ImageDeleteTaskCoordinator;
 import com.example.board.domain.image.dto.response.PostImageResponse;
 import com.example.board.domain.image.dto.response.PostImageUploadResponse;
 import com.example.board.domain.image.entity.PostImage;
@@ -17,6 +18,7 @@ import com.example.board.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,11 +31,23 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class PostImageService {
 
-    private final PostImageRepository postImageRepository;
-    private final PostRepository postRepository;
-    private final ImageStorage imageStorage;
-    private final ImageFileValidator imageFileValidator;
-    private final ImageProperties imageProperties;
+    private final PostImageRepository
+            postImageRepository;
+
+    private final PostRepository
+            postRepository;
+
+    private final ImageStorage
+            imageStorage;
+
+    private final ImageFileValidator
+            imageFileValidator;
+
+    private final ImageProperties
+            imageProperties;
+
+    private final ImageDeleteTaskCoordinator
+            imageDeleteTaskCoordinator;
 
     @Transactional
     public PostImageUploadResponse uploadImages(
@@ -75,10 +89,11 @@ public class PostImageService {
             List<PostImage> images =
                     new ArrayList<>();
 
-            for (int index = 0;
-                 index < files.size();
-                 index++) {
-
+            for (
+                    int index = 0;
+                    index < files.size();
+                    index++
+            ) {
                 MultipartFile file =
                         files.get(index);
 
@@ -154,13 +169,24 @@ public class PostImageService {
                                         )
                         );
 
-        String storageKey =
-                image.getStorageKey();
+        imageDeleteTaskCoordinator.enqueue(
+                List.of(image)
+        );
+    }
 
-        postImageRepository.delete(image);
-        postImageRepository.flush();
+    @Transactional(
+            propagation = Propagation.MANDATORY
+    )
+    public void enqueueAllImagesForDeletion(
+            Long postId
+    ) {
+        List<PostImage> images =
+                postImageRepository
+                        .findAllByPostIdOrderBySortOrderAsc(
+                                postId
+                        );
 
-        imageStorage.delete(storageKey);
+        imageDeleteTaskCoordinator.enqueue(images);
     }
 
     public List<PostImageResponse>
@@ -273,7 +299,8 @@ public class PostImageService {
 
             } catch (RuntimeException cleanupException) {
                 log.error(
-                        "업로드 실패 후 이미지 정리에 실패했습니다. storageKey={}",
+                        "업로드 실패 후 이미지 정리 실패. "
+                                + "storageKey={}",
                         storageKey,
                         cleanupException
                 );

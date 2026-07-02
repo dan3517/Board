@@ -3,6 +3,7 @@ package com.example.board.domain.post.service;
 import com.example.board.domain.category.entity.Category;
 import com.example.board.domain.category.entity.CategoryStatus;
 import com.example.board.domain.category.repository.CategoryRepository;
+import com.example.board.domain.comment.entity.CommentStatus;
 import com.example.board.domain.comment.repository.CommentRepository;
 import com.example.board.domain.image.service.PostImageService;
 import com.example.board.domain.member.entity.Member;
@@ -759,7 +760,7 @@ class PostServiceTest {
         );
 
         given(
-                postRepository.findByIdAndStatus(
+                postRepository.findByIdAndStatusForUpdate(
                         postId,
                         PostStatus.PUBLISHED
                 )
@@ -775,6 +776,101 @@ class PostServiceTest {
         // then
         assertThat(post.getStatus())
                 .isEqualTo(PostStatus.DELETED);
+
+        then(postRepository)
+                .should(never())
+                .delete(any(Post.class));
+
+        then(postRepository)
+                .should(never())
+                .save(any(Post.class));
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 시 댓글, 좋아요, 이미지를 함께 정리한다")
+    void deletePostCleansRelatedData() {
+        // given
+        Long authorId = 1L;
+        Long postId = 10L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category category =
+                Category.create("자유");
+
+        Post post = Post.create(
+                author,
+                category,
+                "게시글 제목",
+                "게시글 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        given(
+                postRepository
+                        .findByIdAndStatusForUpdate(
+                                postId,
+                                PostStatus.PUBLISHED
+                        )
+        ).willReturn(Optional.of(post));
+
+        given(
+                commentRepository
+                        .softDeleteAllByPostId(
+                                postId,
+                                CommentStatus.PUBLISHED,
+                                CommentStatus.DELETED
+                        )
+        ).willReturn(3);
+
+        given(
+                postLikeRepository
+                        .deleteAllByPostId(postId)
+        ).willReturn(5);
+
+        // when
+        postService.deletePost(
+                authorId,
+                MemberRole.USER,
+                postId
+        );
+
+        // then
+        assertThat(post.getStatus())
+                .isEqualTo(PostStatus.DELETED);
+
+        then(commentRepository)
+                .should()
+                .softDeleteAllByPostId(
+                        postId,
+                        CommentStatus.PUBLISHED,
+                        CommentStatus.DELETED
+                );
+
+        then(postLikeRepository)
+                .should()
+                .deleteAllByPostId(postId);
+
+        then(postImageService)
+                .should()
+                .enqueueAllImagesForDeletion(
+                        postId
+                );
 
         then(postRepository)
                 .should(never())

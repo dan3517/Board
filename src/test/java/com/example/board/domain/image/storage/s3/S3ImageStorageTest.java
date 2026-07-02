@@ -14,16 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.net.URI;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -296,6 +293,105 @@ class S3ImageStorageTest {
 
         assertThat(exception.getCause())
                 .isSameAs(s3Exception);
+    }
+
+    @Test
+    @DisplayName("여러 S3 객체를 한 번에 삭제한다")
+    void deleteAllSuccess() {
+        // given
+        List<String> storageKeys =
+                List.of(
+                        "posts/10/first.png",
+                        "posts/10/second.jpg"
+                );
+
+        given(
+                s3Client.deleteObjects(
+                        any(DeleteObjectsRequest.class)
+                )
+        ).willReturn(
+                DeleteObjectsResponse.builder()
+                        .build()
+        );
+
+        // when
+        s3ImageStorage.deleteAll(storageKeys);
+
+        // then
+        ArgumentCaptor<DeleteObjectsRequest>
+                requestCaptor =
+                ArgumentCaptor.forClass(
+                        DeleteObjectsRequest.class
+                );
+
+        then(s3Client)
+                .should()
+                .deleteObjects(
+                        requestCaptor.capture()
+                );
+
+        DeleteObjectsRequest request =
+                requestCaptor.getValue();
+
+        assertThat(request.bucket())
+                .isEqualTo("test-board-bucket");
+
+        assertThat(request.delete().quiet())
+                .isTrue();
+
+        assertThat(request.delete().objects())
+                .extracting(
+                        software.amazon.awssdk
+                                .services.s3.model
+                                .ObjectIdentifier::key
+                )
+                .containsExactly(
+                        "posts/10/first.png",
+                        "posts/10/second.jpg"
+                );
+    }
+
+    @Test
+    @DisplayName("S3 일괄 삭제 응답에 오류가 있으면 실패한다")
+    void deleteAllFailsWhenResponseContainsError() {
+        // given
+        String failedKey = "posts/10/failed.png";
+
+        S3Error deleteError =
+                S3Error.builder()
+                        .key(failedKey)
+                        .code("AccessDenied")
+                        .message("Access Denied")
+                        .build();
+
+        DeleteObjectsResponse response =
+                DeleteObjectsResponse.builder()
+                        .errors(List.of(deleteError))
+                        .build();
+
+        given(
+                s3Client.deleteObjects(
+                        any(DeleteObjectsRequest.class)
+                )
+        ).willReturn(response);
+
+        // when
+        Throwable throwable =
+                catchThrowable(
+                        () -> s3ImageStorage.deleteAll(
+                                List.of(failedKey)
+                        )
+                );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.IMAGE_STORAGE_ERROR);
     }
 
     private byte[] pngBytes() {

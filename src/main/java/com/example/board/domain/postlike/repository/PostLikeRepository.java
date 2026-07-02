@@ -29,4 +29,16 @@ public interface PostLikeRepository
             @Param("postId") Long postId,
             @Param("memberId") Long memberId
     );
+
+    @Modifying(
+            flushAutomatically = true
+    )
+    @Query("""
+        delete from PostLike postLike
+        where postLike.post.id = :postId
+        """)
+    int deleteAllByPostId(
+            @Param("postId")
+            Long postId
+    );
 }

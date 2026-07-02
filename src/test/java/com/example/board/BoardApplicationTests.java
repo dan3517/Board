@@ -10,9 +10,10 @@ import org.springframework.boot.test.context.SpringBootTest;
         "spring.datasource.driver-class-name=org.h2.Driver",
 
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
 
         "jwt.secret=dGVzdC1qd3Qtc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWJ5dGVz",
+
+        "app.image.cleanup.batch-size=10",
 
         "app.file.storage=local",
         "app.file.local.root-path=./build/test-uploads",
