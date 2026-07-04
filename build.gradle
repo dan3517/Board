@@ -43,12 +43,8 @@ dependencies {
 
     testRuntimeOnly 'com.h2database:h2'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     implementation "io.github.openfeign.querydsl:querydsl-jpa:${querydslVersion}"
 
@@ -70,6 +66,11 @@ dependencies {
     testImplementation(
             'org.springframework.security:'
                     + 'spring-security-test'
+    )
+
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-starter-security-test'
     )
 
     // Spring Boot + Testcontainers 연결
@@ -108,6 +109,34 @@ dependencies {
 
 }
 
+tasks.named('bootJar') {
+    archiveFileName = 'board-api.jar'
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs Testcontainers integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('integrationTest')
 }
