@@ -1,0 +1,883 @@
+package com.example.board.domain.post.service;
+
+import com.example.board.domain.category.entity.Category;
+import com.example.board.domain.category.entity.CategoryStatus;
+import com.example.board.domain.category.repository.CategoryRepository;
+import com.example.board.domain.comment.entity.CommentStatus;
+import com.example.board.domain.comment.repository.CommentRepository;
+import com.example.board.domain.image.service.PostImageService;
+import com.example.board.domain.member.entity.Member;
+import com.example.board.domain.member.entity.MemberRole;
+import com.example.board.domain.member.entity.MemberStatus;
+import com.example.board.domain.member.repository.MemberRepository;
+import com.example.board.domain.post.dto.query.PostDetailQueryDto;
+import com.example.board.domain.post.dto.request.PostCreateRequest;
+import com.example.board.domain.post.dto.request.PostUpdateRequest;
+import com.example.board.domain.post.dto.response.PostCreateResponse;
+import com.example.board.domain.post.dto.response.PostDetailResponse;
+import com.example.board.domain.post.dto.response.PostUpdateResponse;
+import com.example.board.domain.post.entity.Post;
+import com.example.board.domain.post.entity.PostStatus;
+import com.example.board.domain.post.repository.PostRepository;
+import com.example.board.domain.postlike.repository.PostLikeRepository;
+import com.example.board.global.exception.BusinessException;
+import com.example.board.global.exception.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class PostServiceTest {
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
+    private PostRepository postRepository;
+
+    @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private PostLikeRepository postLikeRepository;
+
+    @Mock
+    private PostImageService postImageService;
+
+    private PostService postService;
+
+    @BeforeEach
+    void setUp() {
+        postService = new PostService(
+                memberRepository,
+                categoryRepository,
+                postRepository,
+                commentRepository,
+                postLikeRepository,
+                postImageService
+        );
+    }
+
+    @Test
+    @DisplayName("로그인한 회원이 게시글을 작성한다")
+    void createPostSuccess() {
+        // given
+        Long memberId = 1L;
+        Long categoryId = 10L;
+
+        PostCreateRequest request =
+                new PostCreateRequest(
+                        categoryId,
+                        "  JPA 공부 기록  ",
+                        "영속성 컨텍스트를 공부했습니다."
+                );
+
+        Member member = Member.create(
+                "user@example.com",
+                "encoded-password",
+                "backend"
+        );
+
+        ReflectionTestUtils.setField(
+                member,
+                "id",
+                memberId
+        );
+
+        Category category =
+                Category.create("공부 기록");
+
+        ReflectionTestUtils.setField(
+                category,
+                "id",
+                categoryId
+        );
+
+        given(
+                memberRepository.findByIdAndStatus(
+                        memberId,
+                        MemberStatus.ACTIVE
+                )
+        ).willReturn(Optional.of(member));
+
+        given(
+                categoryRepository.findByIdAndStatus(
+                        categoryId,
+                        CategoryStatus.ACTIVE
+                )
+        ).willReturn(Optional.of(category));
+
+        given(
+                postRepository.save(any(Post.class))
+        ).willAnswer(invocation -> {
+            Post post = invocation.getArgument(0);
+
+            ReflectionTestUtils.setField(
+                    post,
+                    "id",
+                    100L
+            );
+
+            return post;
+        });
+
+        // when
+        PostCreateResponse response =
+                postService.createPost(
+                        memberId,
+                        request
+                );
+
+        // then
+        assertThat(response.postId())
+                .isEqualTo(100L);
+
+        ArgumentCaptor<Post> postCaptor =
+                ArgumentCaptor.forClass(Post.class);
+
+        then(postRepository)
+                .should()
+                .save(postCaptor.capture());
+
+        Post savedPost = postCaptor.getValue();
+
+        assertThat(savedPost.getAuthor())
+                .isSameAs(member);
+
+        assertThat(savedPost.getCategory())
+                .isSameAs(category);
+
+        assertThat(savedPost.getTitle())
+                .isEqualTo("JPA 공부 기록");
+
+        assertThat(savedPost.getContent())
+                .isEqualTo(
+                        "영속성 컨텍스트를 공부했습니다."
+                );
+
+        assertThat(savedPost.getViewCount())
+                .isZero();
+
+        assertThat(savedPost.getStatus())
+                .isEqualTo(PostStatus.PUBLISHED);
+    }
+
+    @Test
+    @DisplayName("활성 회원을 찾을 수 없으면 게시글 작성에 실패한다")
+    void createPostFailsWhenMemberNotFound() {
+        // given
+        Long memberId = 1L;
+
+        PostCreateRequest request =
+                new PostCreateRequest(
+                        10L,
+                        "제목",
+                        "내용"
+                );
+
+        given(
+                memberRepository.findByIdAndStatus(
+                        memberId,
+                        MemberStatus.ACTIVE
+                )
+        ).willReturn(Optional.empty());
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.createPost(
+                        memberId,
+                        request
+                )
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.MEMBER_NOT_FOUND
+                );
+
+        then(categoryRepository)
+                .shouldHaveNoInteractions();
+
+        then(postRepository)
+                .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("활성 카테고리를 찾을 수 없으면 게시글 작성에 실패한다")
+    void createPostFailsWhenCategoryNotFound() {
+        // given
+        Long memberId = 1L;
+        Long categoryId = 10L;
+
+        PostCreateRequest request =
+                new PostCreateRequest(
+                        categoryId,
+                        "제목",
+                        "내용"
+                );
+
+        Member member = Member.create(
+                "user@example.com",
+                "encoded-password",
+                "backend"
+        );
+
+        given(
+                memberRepository.findByIdAndStatus(
+                        memberId,
+                        MemberStatus.ACTIVE
+                )
+        ).willReturn(Optional.of(member));
+
+        given(
+                categoryRepository.findByIdAndStatus(
+                        categoryId,
+                        CategoryStatus.ACTIVE
+                )
+        ).willReturn(Optional.empty());
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.createPost(
+                        memberId,
+                        request
+                )
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.CATEGORY_NOT_AVAILABLE
+                );
+
+        then(postRepository)
+                .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("게시글 상세 조회 시 조회 수를 증가시키고 게시글 정보를 반환한다")
+    void getPostSuccess() {
+        // given
+        Long postId = 1L;
+
+        LocalDateTime createdAt =
+                LocalDateTime.of(
+                        2026,
+                        7,
+                        1,
+                        10,
+                        0
+                );
+
+        LocalDateTime updatedAt =
+                LocalDateTime.of(
+                        2026,
+                        7,
+                        1,
+                        10,
+                        30
+                );
+
+        PostDetailQueryDto queryDto =
+                new PostDetailQueryDto(
+                        postId,
+                        "JPA 공부 기록",
+                        "영속성 컨텍스트를 공부했습니다.",
+                        11L,
+                        createdAt,
+                        updatedAt,
+                        10L,
+                        "backend",
+                        20L,
+                        "공부 기록"
+                );
+
+        PostDetailResponse.from(
+                queryDto,
+                3L,
+                5L,
+                false,
+                List.of()
+        );
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(1);
+
+        given(
+                postRepository.findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(queryDto));
+
+        given(
+                postImageService.getImagesForPost(postId)
+        ).willReturn(List.of());
+
+        // when
+        PostDetailResponse response =
+                postService.getPost(postId, null);
+
+        // then
+        assertThat(response.postId())
+                .isEqualTo(postId);
+
+        assertThat(response.title())
+                .isEqualTo("JPA 공부 기록");
+
+        assertThat(response.content())
+                .isEqualTo(
+                        "영속성 컨텍스트를 공부했습니다."
+                );
+
+        assertThat(response.viewCount())
+                .isEqualTo(11L);
+
+        assertThat(response.author().memberId())
+                .isEqualTo(10L);
+
+        assertThat(response.author().nickname())
+                .isEqualTo("backend");
+
+        assertThat(response.category().categoryId())
+                .isEqualTo(20L);
+
+        assertThat(response.category().name())
+                .isEqualTo("공부 기록");
+
+        then(postRepository)
+                .should()
+                .increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                );
+
+        then(postRepository)
+                .should()
+                .findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                );
+    }
+
+    @Test
+    @DisplayName("게시글이 존재하지 않으면 상세 조회에 실패한다")
+    void getPostFailsWhenPostNotFound() {
+        // given
+        Long postId = 999L;
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(0);
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.getPost(postId, null)
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.POST_NOT_FOUND);
+
+        then(postRepository)
+                .should(never())
+                .findDetailByIdAndStatus(
+                        anyLong(),
+                        any(PostStatus.class)
+                );
+    }
+
+    @Test
+    @DisplayName("조회 수 증가 후 상세 정보를 찾을 수 없으면 실패한다")
+    void getPostFailsWhenDetailNotFound() {
+        // given
+        Long postId = 1L;
+
+        given(
+                postRepository.increaseViewCount(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(1);
+
+        given(
+                postRepository.findDetailByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.empty());
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.getPost(postId, null)
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.POST_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("게시글 작성자는 게시글을 수정할 수 있다")
+    void updatePostSuccessByAuthor() {
+        // given
+        Long authorId = 1L;
+        Long postId = 10L;
+        Long oldCategoryId = 100L;
+        Long newCategoryId = 200L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category oldCategory =
+                Category.create("자유");
+
+        ReflectionTestUtils.setField(
+                oldCategory,
+                "id",
+                oldCategoryId
+        );
+
+        Category newCategory =
+                Category.create("공부 기록");
+
+        ReflectionTestUtils.setField(
+                newCategory,
+                "id",
+                newCategoryId
+        );
+
+        Post post = Post.create(
+                author,
+                oldCategory,
+                "기존 제목",
+                "기존 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        PostUpdateRequest request =
+                new PostUpdateRequest(
+                        newCategoryId,
+                        "  수정된 제목  ",
+                        "수정된 내용"
+                );
+
+        given(
+                postRepository.findByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(post));
+
+        given(
+                categoryRepository.findByIdAndStatus(
+                        newCategoryId,
+                        CategoryStatus.ACTIVE
+                )
+        ).willReturn(Optional.of(newCategory));
+
+        // when
+        PostUpdateResponse response =
+                postService.updatePost(
+                        authorId,
+                        MemberRole.USER,
+                        postId,
+                        request
+                );
+
+        // then
+        assertThat(response.postId())
+                .isEqualTo(postId);
+
+        assertThat(post.getCategory())
+                .isSameAs(newCategory);
+
+        assertThat(post.getTitle())
+                .isEqualTo("수정된 제목");
+
+        assertThat(post.getContent())
+                .isEqualTo("수정된 내용");
+
+        then(postRepository)
+                .should(never())
+                .save(any(Post.class));
+    }
+
+    @Test
+    @DisplayName("다른 회원은 게시글을 수정할 수 없다")
+    void updatePostFailsWhenNotAuthor() {
+        // given
+        Long authorId = 1L;
+        Long otherMemberId = 2L;
+        Long postId = 10L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category category =
+                Category.create("자유");
+
+        Post post = Post.create(
+                author,
+                category,
+                "기존 제목",
+                "기존 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        PostUpdateRequest request =
+                new PostUpdateRequest(
+                        100L,
+                        "수정 제목",
+                        "수정 내용"
+                );
+
+        given(
+                postRepository.findByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(post));
+
+        // when
+        Throwable throwable = catchThrowable(
+                () -> postService.updatePost(
+                        otherMemberId,
+                        MemberRole.USER,
+                        postId,
+                        request
+                )
+        );
+
+        // then
+        assertThat(throwable)
+                .isInstanceOf(BusinessException.class);
+
+        BusinessException exception =
+                (BusinessException) throwable;
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.POST_ACCESS_DENIED
+                );
+
+        then(categoryRepository)
+                .shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 회원의 게시글을 수정할 수 있다")
+    void updatePostSuccessByAdmin() {
+        // given
+        Long authorId = 1L;
+        Long adminId = 99L;
+        Long postId = 10L;
+        Long categoryId = 200L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category oldCategory =
+                Category.create("자유");
+
+        Category newCategory =
+                Category.create("정보");
+
+        ReflectionTestUtils.setField(
+                newCategory,
+                "id",
+                categoryId
+        );
+
+        Post post = Post.create(
+                author,
+                oldCategory,
+                "기존 제목",
+                "기존 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        PostUpdateRequest request =
+                new PostUpdateRequest(
+                        categoryId,
+                        "관리자가 수정한 제목",
+                        "관리자가 수정한 내용"
+                );
+
+        given(
+                postRepository.findByIdAndStatus(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(post));
+
+        given(
+                categoryRepository.findByIdAndStatus(
+                        categoryId,
+                        CategoryStatus.ACTIVE
+                )
+        ).willReturn(Optional.of(newCategory));
+
+        // when
+        postService.updatePost(
+                adminId,
+                MemberRole.ADMIN,
+                postId,
+                request
+        );
+
+        // then
+        assertThat(post.getTitle())
+                .isEqualTo("관리자가 수정한 제목");
+
+        assertThat(post.getContent())
+                .isEqualTo("관리자가 수정한 내용");
+    }
+
+    @Test
+    @DisplayName("게시글 작성자는 게시글을 논리 삭제할 수 있다")
+    void deletePostSuccessByAuthor() {
+        // given
+        Long authorId = 1L;
+        Long postId = 10L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category category =
+                Category.create("자유");
+
+        Post post = Post.create(
+                author,
+                category,
+                "게시글 제목",
+                "게시글 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        given(
+                postRepository.findByIdAndStatusForUpdate(
+                        postId,
+                        PostStatus.PUBLISHED
+                )
+        ).willReturn(Optional.of(post));
+
+        // when
+        postService.deletePost(
+                authorId,
+                MemberRole.USER,
+                postId
+        );
+
+        // then
+        assertThat(post.getStatus())
+                .isEqualTo(PostStatus.DELETED);
+
+        then(postRepository)
+                .should(never())
+                .delete(any(Post.class));
+
+        then(postRepository)
+                .should(never())
+                .save(any(Post.class));
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 시 댓글, 좋아요, 이미지를 함께 정리한다")
+    void deletePostCleansRelatedData() {
+        // given
+        Long authorId = 1L;
+        Long postId = 10L;
+
+        Member author = Member.create(
+                "author@example.com",
+                "encoded-password",
+                "author"
+        );
+
+        ReflectionTestUtils.setField(
+                author,
+                "id",
+                authorId
+        );
+
+        Category category =
+                Category.create("자유");
+
+        Post post = Post.create(
+                author,
+                category,
+                "게시글 제목",
+                "게시글 내용"
+        );
+
+        ReflectionTestUtils.setField(
+                post,
+                "id",
+                postId
+        );
+
+        given(
+                postRepository
+                        .findByIdAndStatusForUpdate(
+                                postId,
+                                PostStatus.PUBLISHED
+                        )
+        ).willReturn(Optional.of(post));
+
+        given(
+                commentRepository
+                        .softDeleteAllByPostId(
+                                postId,
+                                CommentStatus.PUBLISHED,
+                                CommentStatus.DELETED
+                        )
+        ).willReturn(3);
+
+        given(
+                postLikeRepository
+                        .deleteAllByPostId(postId)
+        ).willReturn(5);
+
+        // when
+        postService.deletePost(
+                authorId,
+                MemberRole.USER,
+                postId
+        );
+
+        // then
+        assertThat(post.getStatus())
+                .isEqualTo(PostStatus.DELETED);
+
+        then(commentRepository)
+                .should()
+                .softDeleteAllByPostId(
+                        postId,
+                        CommentStatus.PUBLISHED,
+                        CommentStatus.DELETED
+                );
+
+        then(postLikeRepository)
+                .should()
+                .deleteAllByPostId(postId);
+
+        then(postImageService)
+                .should()
+                .enqueueAllImagesForDeletion(
+                        postId
+                );
+
+        then(postRepository)
+                .should(never())
+                .delete(any(Post.class));
+
+        then(postRepository)
+                .should(never())
+                .save(any(Post.class));
+    }
+}

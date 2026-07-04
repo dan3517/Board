@@ -1,0 +1,142 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'Board'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+def querydslVersion = '7.4.0'
+def awsSdkVersion = '2.46.19'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    testRuntimeOnly 'com.h2database:h2'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+
+    implementation "io.github.openfeign.querydsl:querydsl-jpa:${querydslVersion}"
+
+    annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:${querydslVersion}:jpa"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+
+    implementation platform(
+            "software.amazon.awssdk:bom:${awsSdkVersion}"
+    )
+
+    implementation 'software.amazon.awssdk:s3'
+
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-starter-test'
+    )
+
+    testImplementation(
+            'org.springframework.security:'
+                    + 'spring-security-test'
+    )
+
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-starter-security-test'
+    )
+
+    // Spring Boot + Testcontainers 연결
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-testcontainers'
+    )
+
+    // Spring Boot 4 TestRestTemplate
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-restclient'
+    )
+
+    testImplementation(
+            'org.springframework.boot:'
+                    + 'spring-boot-resttestclient'
+    )
+
+    // Testcontainers JUnit 5
+    testImplementation(
+            'org.testcontainers:'
+                    + 'testcontainers-junit-jupiter'
+    )
+
+    // Testcontainers MySQL
+    testImplementation(
+            'org.testcontainers:'
+                    + 'testcontainers-mysql'
+    )
+
+    testRuntimeOnly(
+            'org.junit.platform:'
+                    + 'junit-platform-launcher'
+    )
+
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'board-api.jar'
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs Testcontainers integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('integrationTest')
+}
