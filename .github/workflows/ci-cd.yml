@@ -24,7 +24,6 @@ jobs:
 
     env:
       FILE_STORAGE: local
-      LOCAL_FILE_ROOT: ${{ runner.temp }}/board-ci-uploads
 
       JWT_SECRET: aW50ZWdyYXRpb24tdGVzdC1qd3Qtc2VjcmV0LWtleS0xMjM0NTY=
       JWT_ACCESS_TOKEN_EXPIRATION_MS: "3600000"
@@ -48,6 +47,11 @@ jobs:
 
       - name: Grant execute permission to Gradle Wrapper
         run: chmod +x gradlew
+
+      - name: Configure CI environment
+        run: |
+          echo "LOCAL_FILE_ROOT=${RUNNER_TEMP}/board-ci-uploads" >> "${GITHUB_ENV}"
+          mkdir -p "${RUNNER_TEMP}/board-ci-uploads"
 
       - name: Display Java and Gradle versions
         run: |
@@ -244,5 +248,4 @@ jobs:
       - name: Remove SSH private key
         if: always()
         run: |
-          rm -f \
-            "${HOME}/.ssh/id_ed25519"
+          rm -f "${HOME}/.ssh/id_ed25519"
