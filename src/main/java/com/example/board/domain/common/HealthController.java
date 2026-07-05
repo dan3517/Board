@@ -13,6 +13,6 @@ public class HealthController implements HealthApiDocs {
     @Override
     @GetMapping
     public ApiResponse<String> health() {
-        return ApiResponse.success("board server is running");
+        return ApiResponse.success("board server is running v2");
     }
 }
